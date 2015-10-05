@@ -42,9 +42,9 @@ def census_input(cell):
     census_input = [cell.id, [cell.x, cell.y]]
     return census_input
 
-def one_hundred():
-    """Returns a random number between 1 and 100."""
-    num = random.randint(1,100)
+def one_fifty():
+    """Returns a random number between 1 and 50."""
+    num = random.randint(1,50)
     return num
 
 def world_input(cell):
@@ -92,11 +92,11 @@ class Cell():
         self.alive = True
         self.life_span = 1
         if x == False:
-            self.x = one_hundred()
+            self.x = one_fifty()
         else:
             self.x = x
         if y == False:
-            self.y = one_hundred()
+            self.y = one_fifty()
         else:
             self.y = y
         RECORD[self.id] = 1
@@ -176,24 +176,33 @@ def mate_attempt(cell):
         cell_death(cell)
         BOOK_OF_LIFE.insert(0,'%s died due to child birth.' % cell.id)
 
-"""User command functions.
+"""User command functions."""
 def generation(first,food,num):
+    """This function handles the successive generations of cells."""
     for item in range(1,(food+1)):
-        FOOD_WORLD.append([one_hundred(),one_hundred()])
-    first_generation = 0
+        """Create intitial food state."""
+        FOOD_WORLD.append([one_fifty(),one_fifty()])
+    cell_classes = []
     for cell in range(1,(first+1)):
-        if first_generation == 0:
             cell = Cell()
+            cell_classes.append(cell)
             cell.world_set()
             BOOK_OF_LIFE.insert(0,'%s was born of the first generation at x: %s y: %s.' \
                                 % (cell.id,cell.x,cell.y))
-            first_generation += 1
-        for day in range(1,(num+1)):
-            location = [cell.x,cell.y]
-            print(location)
-            food_search = FOOD_WORLD.count(location)
-            print(food_search)
-"""
+    """Hunt"""
+    for cell in cell_classes:
+        location = []
+        location.append([cell.x,cell.y])
+        for key in location:
+            hunt = FOOD_WORLD.count(key)
+            cell.food += hunt
+        cell.food += -1
+        if cell.food < 0:
+            cell_death(cell)
+            BOOK_OF_LIFE.insert(0,'%s has died of starvation.' % cell.id)
+        del FOOD_WORLD[:]
+        for item in range(1,(food+1)):
+            FOOD_WORLD.append([one_fifty(),one_fifty()])
 
 """Copyright Patrick Morgan 2015, you may use, edit, and
 distribute non-commercially. Made on the Raspberry Pi.
