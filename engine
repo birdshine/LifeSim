@@ -1,0 +1,200 @@
+"""This program will simulate life on a cellular level simplisticly in order to test
+various evolutionary and biological theories.
+"""
+
+import random
+import string
+
+"""WORLD represents the physical location of the cells. x = y
+A list.
+"""
+WORLD = []
+"""FOOD_WORLD represents the location of food that the cells
+need to live.
+A list.
+"""
+FOOD_WORLD = []
+"""RECORD represents every cell that has ever lived.
+It will track the cell's life span before it died.
+A dictionary.
+"""
+RECORD = {}
+"""CENSUS represents every cell that is currently alive.
+It will keep track of the cell's X and Y coordinates.
+A list.
+"""
+CENSUS = []
+"""BOOK_OF_LIFE keeps a record of births and deaths.
+It is a list
+"""
+BOOK_OF_LIFE = []
+
+"""Functions that will do work."""
+def id_generator(size=10, chars=string.digits):
+    """Generates a 10 string ID of uppercase characters and integers
+    unless given the arguments 1) the length 2) characters to choose from
+    in generation. h/t to the internet.
+    """
+    return ''.join(random.choice(chars) for _ in range(size))
+
+def census_input(cell):
+    """Turns a cell's attributes into data that can be added to CENSUS."""
+    census_input = [cell.id, [cell.x, cell.y]]
+    return census_input
+
+def one_hundred():
+    """Returns a random number between 1 and 100."""
+    num = random.randint(1,100)
+    return num
+
+def world_input(cell):
+    "Turns a cell's attributes intos data that can be added to WORLD."""
+    world_input = [cell.x, cell.y]
+    return world_input
+
+def plus_minus_same():
+    """Returns 1,0, or -1 randomly."""
+    coin = random.randint(0,2)
+    if coin == 0:
+        return -1
+    elif coin == 1:
+        return 0
+    else:
+        return 1
+
+def world_reset():
+    """Will reset WORLD with only living cells from CENSUS."""
+    del WORLD[:]
+    for cell in CENSUS:
+        WORLD.append([cell[1][0], cell[1][1]])
+
+def read_book():
+    for entry in BOOK_OF_LIFE:
+        print(entry)
+
+"""End of functions that do work."""
+
+"""Classes that define entities."""
+class Cell():
+    """The unit of life for the simulation."""
+
+    def __init__(self):
+        """Creates a cell in limbo."""
+        self.id = id_generator()
+        self.life_span = 0
+        self.food = 1
+        self.mate = False
+        self.mature = False
+        RECORD[self.id] = 0
+
+    def world_set(self,x=False,y=False):
+        """Sets the cell on the world and gives it life."""
+        self.alive = True
+        self.life_span = 1
+        if x == False:
+            self.x = one_hundred()
+        else:
+            self.x = x
+        if y == False:
+            self.y = one_hundred()
+        else:
+            self.y = y
+        RECORD[self.id] = 1
+        """Starting location for cells is limbo, location determined
+        by parents.
+        """
+        WORLD.append(world_input(self))
+        CENSUS.append(census_input(self))
+
+    def move_location(self,x,y):
+        """Moves cell to new location in the world."""
+        WORLD.remove(world_input(self))
+        CENSUS.remove(census_input(self))
+        self.x = x
+        self.y = y
+        WORLD.append(world_input(self))
+        CENSUS.append(census_input(self))
+
+    def food_adj(self,cost):
+        """Gives or takes food from a cell."""
+        CENSUS.remove(census_input(self))
+        self.food += cost
+        CENSUS.append(census_input(self))
+        if self.food < 0:
+            cell_death(cell)
+            print('The cell %s has died due food expenditure.' % self.id)
+
+"""End of classes that define entities."""
+
+"""Biological Functions"""
+def cell_death(cell):
+    CENSUS.remove(census_input(cell))
+    WORLD.remove(world_input(cell))
+    cell.alive = False
+    world_reset()
+    
+def mate_attempt(cell):
+    """Function will attempt to mate called cell with all other applicable cells."""
+    valid_mates = 0
+    for other in CENSUS:
+        """If cell is adjacent shares x but not y, or vice versa,
+        they can mate.
+        """
+        if other[1][0] == cell.x:
+            if other[1][1] == cell.y:
+                pass
+            else:
+                valid_mates += 1
+        """If the cell is adjacent in x and/or y they can mate."""
+        if other[1][0] == (cell.x + 1) or other[0] == (cell.x -1):
+            if other[1][1] == (cell.y + 1) or other[1][1] == (cell.y -1):
+                valid_mates += 1
+    """Self cell must have enough food."""
+    if cell.food < 1:
+        valid_mates = 0
+    """Cells can only have four babies at maximum."""
+    if valid_mates > 4:
+        valid_mates = 4
+    """Let's make baby cells now."""
+    if valid_mates > 0:
+        offspring_id = []
+        """Loops through creating ID's for baby cells, costing food."""
+        while True:
+            for i in range(1,(valid_mates + 1)):
+                offspring_id.append(id_generator())
+                cell.food += -1
+            break
+        for baby in offspring_id:
+            original_id = baby
+            baby = Cell()
+            baby.id = original_id
+            baby_x = (cell.x + plus_minus_same())
+            baby_y = (cell.y + plus_minus_same())
+            baby.world_set(baby_x,baby_y)
+            BOOK_OF_LIFE.insert(0,'%s was born on x: %s y: %s.' % (baby.id,baby.x,baby.y))
+    if cell.food < 0:
+        cell_death(cell)
+        BOOK_OF_LIFE.insert(0,'%s died due to child birth.' % cell.id)
+
+"""User command functions.
+def generation(first,food,num):
+    for item in range(1,(food+1)):
+        FOOD_WORLD.append([one_hundred(),one_hundred()])
+    first_generation = 0
+    for cell in range(1,(first+1)):
+        if first_generation == 0:
+            cell = Cell()
+            cell.world_set()
+            BOOK_OF_LIFE.insert(0,'%s was born of the first generation at x: %s y: %s.' \
+                                % (cell.id,cell.x,cell.y))
+            first_generation += 1
+        for day in range(1,(num+1)):
+            location = [cell.x,cell.y]
+            print(location)
+            food_search = FOOD_WORLD.count(location)
+            print(food_search)
+"""
+
+"""Copyright Patrick Morgan 2015, you may use, edit, and
+distribute non-commercially. Made on the Raspberry Pi.
+"""
