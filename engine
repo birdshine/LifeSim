@@ -44,7 +44,7 @@ def census_input(cell):
 
 def one_fifty():
     """Returns a random number between 1 and 50."""
-    num = random.randint(1,50)
+    num = random.randint(1,10)
     return num
 
 def world_input(cell):
@@ -58,6 +58,14 @@ def plus_minus_same():
     if coin == 0:
         return -1
     elif coin == 1:
+        return 0
+    else:
+        return 1
+
+def coin_toss():
+    """Simulates a coin toss."""
+    coin = random.randint(0,1)
+    if coin == 0:
         return 0
     else:
         return 1
@@ -189,21 +197,71 @@ def generation(first,food,num):
             cell.world_set()
             BOOK_OF_LIFE.insert(0,'%s was born of the first generation at x: %s y: %s.' \
                                 % (cell.id,cell.x,cell.y))
-    """Hunt"""
+    """Goes through num generations."""
+    times = 1
+    for gen in range(1,(num+1)):
+        if times > 1:
+            for item in range(1,(food+1)):
+                """Respawn food at random."""
+                FOOD_WORLD.append([one_fifty(),one_fifty()])
+        times += 1
+        """Fight other's in their own square."""
+        for cell in cell_classes:
+            location = []
+            location.append([cell.x,cell.y])
+            for key in location:
+                enemies = WORLD.count(key)
+                enemy_list = []
+                if enemies > 1:
+                    for other in cell_classes:
+                        if other.x == cell.x and other.y == cell.y:
+                            enemy_list.append(other)
+                            enemy_list.append(cell)
+                            for enemy in enemy_list:
+                                food_list = []
+                                food_list.append(enemy.food)
+                                winner = max(food_list)
+                                if enemy.food == winner:
+                                    victor = enemy
+                                if enemy.food < winner:
+                                    cell_death(enemy)
+                                    BOOK_OF_LIFE.insert(0,'%s was killed by the competitor %s.' & (enemy,victor))
+                                    world_reset()
+                                if enemy.food == winner:
+                                    coin = coin_toss()
+                                    if coin == 0:
+                                        if enemy.alive == True:
+                                            cell_death(enemy)
+                                            BOOK_OF_LIFE.insert(0,'%s was killed in a struggle for its environment.' \
+                                                                % enemy.id)
+                                            world_reset()
+                            del enemy_list[:]
+        """Hunt"""
+        for cell in cell_classes:
+            location = []
+            location.append([cell.x,cell.y])
+            for key in location:
+                hunt = FOOD_WORLD.count(key)
+                cell.food += hunt
+            cell.food += -1
+            if cell.food < 0 and cell.alive == True:
+                cell_death(cell)
+                BOOK_OF_LIFE.insert(0,'%s has died of starvation.' % cell.id)
+            del FOOD_WORLD[:]
+            for item in range(1,(food+1)):
+                FOOD_WORLD.append([one_fifty(),one_fifty()])
+        """Age the cells."""
+        for cell in cell_classes:
+            cell.life_span += 1
+            RECORD[cell.id] = cell.life_span
+            if cell.life_span == 2:
+                cell.mature = True
+    """Survivor check."""
+    print("Survivors:")
     for cell in cell_classes:
-        location = []
-        location.append([cell.x,cell.y])
-        for key in location:
-            hunt = FOOD_WORLD.count(key)
-            cell.food += hunt
-        cell.food += -1
-        if cell.food < 0:
-            cell_death(cell)
-            BOOK_OF_LIFE.insert(0,'%s has died of starvation.' % cell.id)
-        del FOOD_WORLD[:]
-        for item in range(1,(food+1)):
-            FOOD_WORLD.append([one_fifty(),one_fifty()])
-
+        if cell.alive == True:
+            print('Name: %s Lifespan: %s Food: %s' % (cell.id,cell.life_span,cell.food))
+        
 """Copyright Patrick Morgan 2015, you may use, edit, and
 distribute non-commercially. Made on the Raspberry Pi.
 """
