@@ -252,10 +252,11 @@ def generation(first,food,num):
                 FOOD_WORLD.append([one_fifty(),one_fifty()])
         """Age the cells."""
         for cell in cell_classes:
-            cell.life_span += 1
-            RECORD[cell.id] = cell.life_span
-            if cell.life_span == 2:
-                cell.mature = True
+            if cell.alive == True:
+                cell.life_span += 1
+                RECORD[cell.id] = cell.life_span
+                if cell.life_span == 2:
+                    cell.mature = True
     """Survivor check."""
     print("Survivors:")
     for cell in cell_classes:
