@@ -46,7 +46,7 @@ def census_input(cell):
 
 def random_location():
     """Returns a random number between 1 and 50."""
-    num = random.randint(1,50)
+    num = random.randint(1,25)
     return num
 
 def world_input(cell):
@@ -143,9 +143,9 @@ def start_food():
 def assign_dna():
     male_or_female = random.randint(0,1)
     if male_or_female == 0:
-        return 'A,A,A'
+        return 'A,A,A,A,A,A'
     else:
-        return 'C,C,C'
+        return 'C,C,C,C,C,C'
 
 """Classes that define entities."""
 class Cell():
@@ -198,6 +198,66 @@ class Cell():
             cell_death(cell)
             print('The cell %s has died due food expenditure.' % self.id)
 
+    def dna_inheritor(self,parent,mate):
+        """Inherits DNA from parents instead of randomly generating."""
+        pair1 = coin_toss()
+        pair2 = coin_toss()
+        pair3 = coin_toss()
+        pair4 = coin_toss()
+        pair5 = coin_toss()
+        pair6 = coin_toss()
+        alpha_raw = mate.dna.split(',')
+        alpha = []
+        for code in alpha_raw:
+            if code == 'A':
+                alpha.append('B')
+            elif code == 'B':
+                alpha.append('A')
+            elif code == 'C':
+                alpha.append('D')
+            else:
+                alpha.append('C')
+        beta_raw = parent.dna.split(',')
+        beta = []
+        for code in beta_raw:
+            if code == 'A':
+                beta.append('B')
+            elif code == 'B':
+                beta.append('A')
+            elif code == 'C':
+                beta.append('D')
+            else:
+                beta.append('C')
+        child = []
+        if pair1 == 0:
+            child.append('%s,' % beta[0])
+        else:
+            child.append('%s,' % alpha[0])
+        if pair2 == 0:
+            child.append('%s,' % beta[1])
+        else:
+            child.append('%s,' % alpha[1])
+        if pair3 == 0:
+            child.append('%s,' % beta[2])
+        else:
+            child.append('%s,' % alpha[2])
+        if pair4 == 0:
+            child.append('%s,' % beta[3])
+        else:
+            child.append('%s,' % alpha[3])
+        if pair5 == 0:
+            child.append('%s,' % beta[4])
+        else:
+            child.append('%s,' % alpha[4])
+        if pair6 == 0:
+            child.append('%s' % beta[5])
+        else:
+            child.append('%s' % alpha[5])
+        child_str = ''.join(child)
+        self.dna = child_str
+
+    def food_zero(self):
+        self.food = 0
 """End of classes that define entities."""
 
 """Biological Functions"""
@@ -207,7 +267,7 @@ def cell_death(cell):
     cell.alive = False
     world_reset()
     
-def mate_attempt(cell):
+def mate_attempt(cell,mate):
     """Function will attempt to mate called cell with all other applicable cells."""
     valid_mates = 0
     for other in CENSUS:
@@ -218,17 +278,19 @@ def mate_attempt(cell):
             if other[1][1] == cell.y:
                 pass
             else:
-                valid_mates += 1
+                if mate.id == other[0]:
+                    valid_mates += 1
         """If the cell is adjacent in x and/or y they can mate."""
         if other[1][0] == (cell.x + 1) or other[0] == (cell.x -1):
             if other[1][1] == (cell.y + 1) or other[1][1] == (cell.y -1):
-                valid_mates += 1
+                if mate.id == other[0]:
+                    valid_mates += 1
     """Self cell must have enough food."""
     if cell.food < 1:
         valid_mates = 0
     """Cells can only have four babies at maximum."""
-    if valid_mates > 2:
-        valid_mates = 2
+    if valid_mates > 3:
+        valid_mates = 3
     """Let's make baby cells now."""
     if valid_mates > 0:
         offspring_id = []
@@ -244,9 +306,13 @@ def mate_attempt(cell):
             baby.id = original_id
             baby_x = (cell.x + plus_minus_same())
             baby_y = (cell.y + plus_minus_same())
+            baby.dna_inheritor(cell,mate)
             baby.world_set(baby_x,baby_y)
-            BOOK_OF_LIFE.append('%s was born to %s on x: %s y: %s.' \
-                                    % (baby.id,cell.id,baby.x,baby.y))
+            food_start = (cell.food / 3)
+            baby.food_zero()
+            baby.food_adj(food_start)
+            BOOK_OF_LIFE.append('%s was born to %s on x: %s y: %s dna: %s' \
+                                    % (baby.id,cell.id,baby.x,baby.y,baby.dna))
     if cell.food < 0:
         cell_death(cell)
         BOOK_OF_LIFE.append('%s died due to child birth.' % cell.id)
@@ -263,7 +329,7 @@ def generation(first,food,num):
                 cell.world_set()
                 BOOK_OF_LIFE.append('%s was born of the first generation at x: %s y: %s.' \
                                     % (cell.id,cell.x,cell.y))
-                EVE.append(cell.id)
+                EVE.append('name: %s' % cell.id)
                 times += 1
     """Goes through num generations."""
     for gen in range(1,(num+1)):
@@ -307,7 +373,10 @@ def generation(first,food,num):
         for cell in cell_classes:
             if cell.alive == True:
                 if cell.mature == True:
-                    mate_attempt(cell)
+                    for other in cell_classes:
+                        if other.alive == True:
+                            if other.mature == True:
+                                mate_attempt(cell,other)
         """Age the cells."""
         for cell in cell_classes:
             if cell.alive == True:
@@ -327,17 +396,21 @@ def generation(first,food,num):
             WORLD.append([cell.x,cell.y])
             CENSUS.append([cell.id, [cell.x,cell.y]])
     """Survivor check."""
-    survivor_list = []
-    for cell in cell_classes:
-        if cell.alive == True:
-            survivor_list.append(cell.id)
-    total_survivors = len(survivor_list)
-    print('%s Survivors' % total_survivors)
-    for cell in cell_classes:
-        if cell.alive == True:
-            print('Name: %s Lifespan: %s Food: %s' % (cell.id,cell.life_span,cell.food))
+    if times > num:
+        survivor_list = []
+        for cell in cell_classes:
+            if cell.alive == True:
+                survivor_list.append(cell.id)
+        total_survivors = len(survivor_list)
+        print('%s Survivors' % total_survivors)
+        for cell in cell_classes:
+            if cell.alive == True:
+                print('Name: %s Lifespan: %s Food: %s DNA: %s' % (cell.id,cell.life_span,cell.food,cell.dna))
         
 """Copyright Patrick Morgan 2015, you may use, edit, and
 distribute non-commercially. Made on the Raspberry Pi.
 """
+
+cell = Cell()
+mate = Cell()
 
