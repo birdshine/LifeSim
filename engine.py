@@ -311,7 +311,7 @@ def mate_attempt(cell,mate):
             food_start = (cell.food / 3)
             baby.food_zero()
             baby.food_adj(food_start)
-            BOOK_OF_LIFE.append('%s was born to %s on x: %s y: %s dna: %s' \
+            BOOK_OF_LIFE.append('%s was born to %s on x: %s y: %s DNA: %s' \
                                     % (baby.id,cell.id,baby.x,baby.y,baby.dna))
             return baby
     if cell.food < 0:
@@ -332,6 +332,7 @@ def generation(first,food,num):
                                     % (cell.id,cell.x,cell.y))
                 EVE.append('NAME: %s DNA: %s' % (cell.id,cell.dna))
                 times += 1
+        read_eve()
     """Goes through num generations."""
     for gen in range(1,(num+1)):
         """Fight other's in their own square."""
@@ -409,6 +410,8 @@ def generation(first,food,num):
             else:
                 dead_list.append(cell)
         total_survivors = len(survivor_list)
+        total_dead = len(dead_list)
+        print('%s Dead' % total_dead)
         print('%s Survivors' % total_survivors)
         for cell in cell_classes:
             if cell.alive == True:
