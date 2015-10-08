@@ -313,6 +313,7 @@ def mate_attempt(cell,mate):
             baby.food_adj(food_start)
             BOOK_OF_LIFE.append('%s was born to %s on x: %s y: %s dna: %s' \
                                     % (baby.id,cell.id,baby.x,baby.y,baby.dna))
+            return baby
     if cell.food < 0:
         cell_death(cell)
         BOOK_OF_LIFE.append('%s died due to child birth.' % cell.id)
@@ -329,7 +330,7 @@ def generation(first,food,num):
                 cell.world_set()
                 BOOK_OF_LIFE.append('%s was born of the first generation at x: %s y: %s.' \
                                     % (cell.id,cell.x,cell.y))
-                EVE.append('name: %s' % cell.id)
+                EVE.append('NAME: %s DNA: %s' % (cell.id,cell.dna))
                 times += 1
     """Goes through num generations."""
     for gen in range(1,(num+1)):
@@ -371,12 +372,15 @@ def generation(first,food,num):
                 BOOK_OF_LIFE.append('%s has died of starvation.' % cell.id)
         """Cells attempt to mate."""
         for cell in cell_classes:
+            babies = []
             if cell.alive == True:
                 if cell.mature == True:
                     for other in cell_classes:
                         if other.alive == True:
                             if other.mature == True:
-                                mate_attempt(cell,other)
+                                baby = mate_attempt(cell,other)
+                                if baby is not None:
+                                    cell_classes.append(baby)
         """Age the cells."""
         for cell in cell_classes:
             if cell.alive == True:
@@ -398,9 +402,12 @@ def generation(first,food,num):
     """Survivor check."""
     if times > num:
         survivor_list = []
+        dead_list = []
         for cell in cell_classes:
             if cell.alive == True:
                 survivor_list.append(cell.id)
+            else:
+                dead_list.append(cell)
         total_survivors = len(survivor_list)
         print('%s Survivors' % total_survivors)
         for cell in cell_classes:
@@ -410,7 +417,3 @@ def generation(first,food,num):
 """Copyright Patrick Morgan 2015, you may use, edit, and
 distribute non-commercially. Made on the Raspberry Pi.
 """
-
-cell = Cell()
-mate = Cell()
-
