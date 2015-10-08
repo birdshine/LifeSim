@@ -46,7 +46,7 @@ def census_input(cell):
 
 def random_location():
     """Returns a random number between 1 and 50."""
-    num = random.randint(1,100)
+    num = random.randint(1,50)
     return num
 
 def world_input(cell):
@@ -272,7 +272,8 @@ def generation(first,food,num):
             for enemy in cell_classes:
                 if enemy.x == cell.x and enemy.y == cell.y:
                     if enemy.id != cell.id:
-                        enemy_cell = enemy
+                        if cell.alive == True and enemy.alive == True:
+                            enemy_cell = enemy
             try:
                 if cell.food > enemy_cell.food:
                     cell_death(enemy_cell)
@@ -339,3 +340,4 @@ def generation(first,food,num):
 """Copyright Patrick Morgan 2015, you may use, edit, and
 distribute non-commercially. Made on the Raspberry Pi.
 """
+
