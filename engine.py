@@ -46,7 +46,7 @@ def census_input(cell):
 
 def random_location():
     """Returns a random number between 1 and 50."""
-    num = random.randint(1,25)
+    num = random.randint(1,50)
     return num
 
 def world_input(cell):
@@ -333,6 +333,7 @@ def generation(first,food,num):
                 EVE.append('NAME: %s DNA: %s' % (cell.id,cell.dna))
                 times += 1
         read_eve()
+        print(WORLD)
     """Goes through num generations."""
     for gen in range(1,(num+1)):
         """Fight other's in their own square."""
@@ -416,6 +417,7 @@ def generation(first,food,num):
         for cell in cell_classes:
             if cell.alive == True:
                 print('Name: %s Lifespan: %s Food: %s DNA: %s' % (cell.id,cell.life_span,cell.food,cell.dna))
+        print(WORLD)
         
 """Copyright Patrick Morgan 2015, you may use, edit, and
 distribute non-commercially. Made on the Raspberry Pi.
