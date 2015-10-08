@@ -272,8 +272,6 @@ def generation(first,food,num):
             for enemy in cell_classes:
                 if enemy.x == cell.x and enemy.y == cell.y:
                     if enemy.id != cell.id:
-                        print('%s: %s' % (cell.id,cell.food))
-                        print('%s: %s' % (enemy.id,enemy.food))
                         enemy_cell = enemy
             try:
                 if cell.food > enemy_cell.food:
