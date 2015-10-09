@@ -342,7 +342,7 @@ def mate_attempt(cell,mate):
 """User command functions."""
 def generation(first,food,num):
     """Primary call function of LifeSim engine."""
-    food = math.floor(food * 100)
+    food = int(food * 100)
     cell_classes = []
     times = 1
     if times == 1:
@@ -386,7 +386,7 @@ def generation(first,food,num):
             location = []
             location.append([cell.x,cell.y])
             for key in location:
-                hunt = math.floor(FOOD_WORLD.count(key))
+                hunt = int(FOOD_WORLD.count(key))
                 if hunt > 0:
                     if cell.alive == True:
                         try:
