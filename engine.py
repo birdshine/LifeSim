@@ -4,6 +4,7 @@ various evolutionary and biological theories.
 
 import random
 import string
+import math
 
 """WORLD represents the physical location of the cells. x = y
 A list.
@@ -46,7 +47,7 @@ def census_input(cell):
 
 def random_location():
     """Returns a random number between 1 and 50."""
-    num = random.randint(1,50)
+    num = random.randint(1,25)
     return num
 
 def world_input(cell):
@@ -147,6 +148,16 @@ def assign_dna():
     else:
         return 'C,C,C,C,C,C'
 
+"""Protein Translators"""
+def sperm_translator(cell):
+    """If the cell has the DNA for food donation to its offspring, giving 1/6th of its
+    food in addition to the birthing partner, it is a sperm.
+    """
+    dna = cell.dna.split(',')
+    if dna[1] == 'B' and dna[2] == 'D':
+        return True
+    del dna[:]
+
 """Classes that define entities."""
 class Cell():
     """The unit of life for the simulation."""
@@ -192,7 +203,7 @@ class Cell():
     def food_adj(self,cost):
         """Gives or takes food from a cell."""
         CENSUS.remove(census_input(self))
-        self.food += cost
+        self.food = int(self.food + cost)
         CENSUS.append(census_input(self))
         if self.food < 0:
             cell_death(cell)
@@ -298,7 +309,7 @@ def mate_attempt(cell,mate):
         while True:
             for i in range(1,(valid_mates + 1)):
                 offspring_id.append(id_generator())
-                cell.food += -1
+                cell.food += -(cell.food / 6)
             break
         for baby in offspring_id:
             original_id = baby
@@ -308,19 +319,30 @@ def mate_attempt(cell,mate):
             baby_y = (cell.y + plus_minus_same())
             baby.dna_inheritor(cell,mate)
             baby.world_set(baby_x,baby_y)
-            food_start = (cell.food / 3)
+            food_start = (cell.food / 6)
+            if sperm_translator(mate) is True:
+                """Run sperm protein translator to test DNA and see if mate is
+                a sperm or not.
+                """
+                food_start += (mate.food / 6)
+                mate.food_adj = -(mate.food / 6)
+                print('%s has contributed food to its offspring %s DNA: %s.' % (mate.id,baby.id,baby.dna))
             baby.food_zero()
-            baby.food_adj(food_start)
+            baby.food_adj(int(food_start))
             BOOK_OF_LIFE.append('%s was born to %s on x: %s y: %s DNA: %s' \
                                     % (baby.id,cell.id,baby.x,baby.y,baby.dna))
             return baby
     if cell.food < 0:
         cell_death(cell)
         BOOK_OF_LIFE.append('%s died due to child birth.' % cell.id)
+    if mate.food < 0:
+        cell_death(mate)
+        BOOK_OF_LIFE.append('%s died from donating food to its offspring.' % mate.id)
 
 """User command functions."""
 def generation(first,food,num):
     """Primary call function of LifeSim engine."""
+    food = math.floor(food * 100)
     cell_classes = []
     times = 1
     if times == 1:
@@ -364,10 +386,15 @@ def generation(first,food,num):
             location = []
             location.append([cell.x,cell.y])
             for key in location:
-                hunt = FOOD_WORLD.count(key)
+                hunt = math.floor(FOOD_WORLD.count(key))
                 if hunt > 0:
                     if cell.alive == True:
-                        cell.food_adj(hunt)
+                        try:
+                            cell.food_adj(hunt)
+                        except:
+                            print('Error adjusting food.')
+                            print(hunt)
+                            print(cell.food)
             cell.food += -1
             if cell.food < 0 and cell.alive == True:
                 cell_death(cell)
