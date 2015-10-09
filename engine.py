@@ -203,11 +203,11 @@ class Cell():
     def food_adj(self,cost):
         """Gives or takes food from a cell."""
         CENSUS.remove(census_input(self))
-        self.food = int(self.food + cost)
+        self.food += cost
         CENSUS.append(census_input(self))
         if self.food < 0:
-            cell_death(cell)
-            print('The cell %s has died due food expenditure.' % self.id)
+            cell_death(self)
+            BOOK_OF_LIFE.append('The cell %s has died due food expenditure.' % self.id)
 
     def dna_inheritor(self,parent,mate):
         """Inherits DNA from parents instead of randomly generating."""
@@ -268,7 +268,9 @@ class Cell():
         self.dna = child_str
 
     def food_zero(self):
+        """Zeros out food. Used for babies."""
         self.food = 0
+
 """End of classes that define entities."""
 
 """Biological Functions"""
@@ -326,7 +328,6 @@ def mate_attempt(cell,mate):
                 """
                 food_start += (mate.food / 6)
                 mate.food_adj = -(mate.food / 6)
-                print('%s has contributed food to its offspring %s DNA: %s.' % (mate.id,baby.id,baby.dna))
             baby.food_zero()
             baby.food_adj(int(food_start))
             BOOK_OF_LIFE.append('%s was born to %s on x: %s y: %s DNA: %s' \
@@ -386,15 +387,16 @@ def generation(first,food,num):
             location = []
             location.append([cell.x,cell.y])
             for key in location:
-                hunt = int(FOOD_WORLD.count(key))
+                hunt = FOOD_WORLD.count(key)
                 if hunt > 0:
                     if cell.alive == True:
                         try:
-                            cell.food_adj(hunt)
+                            cell.food = (cell.food + hunt)
                         except:
                             print('Error adjusting food.')
                             print(hunt)
                             print(cell.food)
+                            print(cell.alive)
             cell.food += -1
             if cell.food < 0 and cell.alive == True:
                 cell_death(cell)
