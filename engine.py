@@ -151,6 +151,11 @@ def food_set(food):
     food = range(1,(food*100)+1)
     for i in food:
         yield [random_location(),random_location()]
+
+def mate_yield(mates):
+    mates = range(1,(mates+1))
+    for i in mates:
+        yield id_generator()
     
         
 """End of functions that do work."""
@@ -366,11 +371,8 @@ def mate_attempt(cell,mate):
     if valid_mates > 0:
         offspring_id = []
         """Loops through creating ID's for baby cells, costing food."""
-        while True:
-            for i in range(1,(valid_mates + 1)):
-                offspring_id.append(id_generator())
-                cell.food += -(cell.food / 6)
-            break
+        offspring_id.extend(mate_yield(valid_mates))
+        cell.food += -(cell.food / 6)
         for baby in offspring_id:
             original_id = baby
             baby = Cell()
@@ -409,8 +411,7 @@ def mate_attempt(cell,mate):
             if sperm_translator(cell) == True or sperm_translator(mate) == True:
                 if egg_translator(cell) == True or egg_translator(mate) == True:
                     BOOK_OF_LIFE.append('%s was born to both a sperm and an egg.' % baby.id)
-            return baby
-
+            yield baby
     if cell.food < 0:
         cell_death(cell)
         BOOK_OF_LIFE.append('%s died due to child birth.' % cell.id)
@@ -500,7 +501,7 @@ def generation(first,food,num):
                     if other.alive == True and other.mature == True:
                         baby = mate_attempt(cell,other)
                         if baby is not None:
-                            cell_classes.append(baby)
+                            cell_classes.extend(baby)
         """Age the cells."""
         for cell in cell_classes:
             if cell.alive == True:
