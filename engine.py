@@ -46,7 +46,7 @@ def census_input(cell):
 
 def random_location():
     """Returns a random number between 1 and 50."""
-    num = random.randint(1,50)
+    num = random.randint(1,25)
     return num
 
 def world_input(cell):
@@ -87,11 +87,15 @@ def random_starting_food():
     else:
         return 3
 
+def census_yield():
+    """Yields census for world_reset()"""
+    for cell in CENSUS:
+        yield [cell[1][0], cell[1][1]]
+
 def world_reset():
     """Will reset WORLD with only living cells from CENSUS."""
     del WORLD[:]
-    for cell in CENSUS:
-        WORLD.append([cell[1][0], cell[1][1]])
+    WORLD.extend(census_yield())
 
 def read_book():
     """Reads BOOK_OF_LIFE in a user friendly manner."""
@@ -141,6 +145,13 @@ def start_food():
     """Creates random starting food from 5-10."""
     food = random.randint(5,10)
     return food
+
+def food_set(food):
+    """Returns a list of food locations for food amount given."""
+    food = range(1,(food*100)+1)
+    for i in food:
+        yield [random_location(),random_location()]
+    
         
 """End of functions that do work."""
 
@@ -410,7 +421,6 @@ def mate_attempt(cell,mate):
 """User command functions."""
 def generation(first,food,num):
     """Primary call function of LifeSim engine."""
-    food = int(food * 100)
     cell_classes = []
     times = 1
     if times == 1:
@@ -476,13 +486,8 @@ def generation(first,food,num):
                 hunt = FOOD_WORLD.count(key)
                 if hunt > 0:
                     if cell.alive == True:
-                        try:
-                            cell.food = (cell.food + hunt)
-                        except:
-                            print('Error adjusting food.')
-                            print(hunt)
-                            print(cell.food)
-                            print(cell.alive)
+                        cell.food = (cell.food + hunt)
+
             cell.food += -1
             if cell.food < 0 and cell.alive == True:
                 cell_death(cell)
@@ -516,8 +521,7 @@ def generation(first,food,num):
                                 gestator.gestating == False
         """Spawn food for generation."""
         del FOOD_WORLD[:]
-        for item in range(1,(food+1)):
-            FOOD_WORLD.append([random_location(),random_location()])
+        FOOD_WORLD.extend(food_set(food))
         """Kyrptonite environment toxin danger. 10% encounter. 30% chance of dying without resistance,
         15% with."""
         for cell in cell_classes:
@@ -564,7 +568,6 @@ def generation(first,food,num):
                 if kryptonite_env_translator(cell) == True:
                     print('Evolution: Resistant to Kryptonite')
         print(WORLD)
-        print(times)
         
 """Copyright Patrick Morgan 2015, you may use, edit, and
 distribute non-commercially. Made on the Raspberry Pi.
