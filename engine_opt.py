@@ -4,6 +4,7 @@ various evolutionary and biological theories.
 
 import random
 import string
+import array
 
 """WORLD represents the physical location of the cells. x = y
 A list.
@@ -496,7 +497,7 @@ def generation(first,food,num):
                     else:
                         cell_death(cell)
                         BOOK_OF_LIFE.append('%s was killed by %s.' % (cell.id,enemy_cell.id))
-                        if cell.pregant == True:
+                        if cell.pregnant == True:
                             for gestator in cell_classes:
                                 if gestator.alive == True and gestator.parent == cell.id:
                                     cell_death(gestator)
