@@ -4,7 +4,6 @@ various evolutionary and biological theories.
 
 import random
 import string
-import math
 
 """WORLD represents the physical location of the cells. x = y
 A list.
@@ -47,7 +46,7 @@ def census_input(cell):
 
 def random_location():
     """Returns a random number between 1 and 50."""
-    num = random.randint(1,25)
+    num = random.randint(1,50)
     return num
 
 def world_input(cell):
@@ -72,6 +71,11 @@ def coin_toss():
         return 0
     else:
         return 1
+
+def d100():
+    """Probability."""
+    d100 = random.randint(1,100)
+    return d100
 
 def random_starting_food():
     """Creates random starting food."""
@@ -140,8 +144,15 @@ def start_food():
         
 """End of functions that do work."""
 
-"""DNA Code"""
+"""DNA CODE SIGNIFICANCE
+[5][6] = CELL MEMBRANE controls whether or not cell can survive the presence of toxic chemical Kyrptonite in the environment.
+[1][2] = SEXUAL VALUES controls whether the cell is a spem or an egg.
+"""
+
 def assign_dna():
+    """Assigns either the genetic string 'A,A,A,A,A,A' or 'C,C,C,C,C,C' to the cell.dna of the
+    first generation's cells.
+    """
     male_or_female = random.randint(0,1)
     if male_or_female == 0:
         return 'A,A,A,A,A,A'
@@ -152,12 +163,46 @@ def assign_dna():
 def sperm_translator(cell):
     """If the cell has the DNA for food donation to its offspring, giving 1/6th of its
     food in addition to the birthing partner, it is a sperm.
+    Active DNA: x,B,(D/C),x,x,x
     """
     dna = cell.dna.split(',')
     if dna[1] == 'B' and dna[2] == 'D':
         return True
+    elif dna[1] == 'B' and dna[2] == 'C':
+        return True
+    else:
+        return False
     del dna[:]
 
+def egg_translator(cell):
+    """If the cell has the DNA for harboring its offspring  inside it, granting it additional food
+    and protection at the risk of the parent cell, it is an egg.
+    Active DNA: x,A,(C/D),x,x,x
+    """
+    dna = cell.dna.split(',')
+    if dna[1] == 'A' and dna[2] == 'C':
+        return True
+    elif dna[1] == 'A' and dna[2] == 'D':
+        return True
+    else:
+        return False
+    del dna[:]
+
+def kryptonite_env_translator(cell):
+    """This protein transaltor will test the cell's membrane and see if they are resistant
+    to kryptonite, an imagined toxic substance in the environment's whos copyrights are
+    owned by DC comics, I'm sure.
+    Active DNA: x,x,x,x,(C/D),(A/B)
+    """
+    dna = cell.dna.split(',')
+    if dna[4] == 'C' or dna[4] == 'D':
+        if dna[5] == 'A' or dna[5] == 'B':
+            return True
+    else:
+        return False
+    del dna[:]
+            
+    
 """Classes that define entities."""
 class Cell():
     """The unit of life for the simulation."""
@@ -169,8 +214,10 @@ class Cell():
         self.food = start_food()
         self.mate = False
         self.mature = False
+        self.pregnant = False
+        self.gestating = False
         self.dna = assign_dna()
-        RECORD[self.id] = 1
+        self.parent = None
 
     def world_set(self,x=False,y=False):
         """Sets the cell on the world and gives it life."""
@@ -317,22 +364,42 @@ def mate_attempt(cell,mate):
             original_id = baby
             baby = Cell()
             baby.id = original_id
+            baby.dna_inheritor(cell,mate)
+            baby.parent = cell.id
             baby_x = (cell.x + plus_minus_same())
             baby_y = (cell.y + plus_minus_same())
-            baby.dna_inheritor(cell,mate)
             baby.world_set(baby_x,baby_y)
             food_start = (cell.food / 6)
             if sperm_translator(mate) is True:
-                """Run sperm protein translator to test DNA and see if mate is
+                """Run sperm protein translator to test DNA of mate and see if mate is
                 a sperm or not.
                 """
                 food_start += (mate.food / 6)
                 mate.food_adj = -(mate.food / 6)
+                BOOK_OF_LIFE.append('%s is a sperm and has contributed to its offspring %s.' \
+                                    % (mate.id,baby.id))
             baby.food_zero()
             baby.food_adj(int(food_start))
-            BOOK_OF_LIFE.append('%s was born to %s on x: %s y: %s DNA: %s' \
-                                    % (baby.id,cell.id,baby.x,baby.y,baby.dna))
+            if egg_translator(cell) is True:
+                """Runs egg protein translator to test DNA of cell and see if cell is
+                an egg or not.
+                """
+                cell.pregnant = True
+                baby.gestating = True
+                cell_food = cell.food
+                baby_food = baby.food
+                cell.food = (cell_food + baby_food)
+                baby.food = (cell_food + baby_food)
+                baby.move_location(cell.x,cell.y)
+                world_reset()
+                BOOK_OF_LIFE.append('%s is an egg and nurtured its offspring %s.' % (cell.id,baby.id))
+            BOOK_OF_LIFE.append('%s was born to %s and %s on x: %s y: %s DNA: %s' \
+                                    % (baby.id,cell.id,mate.id,baby.x,baby.y,baby.dna))
+            if sperm_translator(cell) == True or sperm_translator(mate) == True:
+                if egg_translator(cell) == True or egg_translator(mate) == True:
+                    BOOK_OF_LIFE.append('%s was born to both a sperm and an egg.' % baby.id)
             return baby
+
     if cell.food < 0:
         cell_death(cell)
         BOOK_OF_LIFE.append('%s died due to child birth.' % cell.id)
@@ -359,25 +426,44 @@ def generation(first,food,num):
         print(WORLD)
     """Goes through num generations."""
     for gen in range(1,(num+1)):
-        """Fight other's in their own square."""
+        """Cells will fight other cells occupying the same square in the WORLD.
+        """
         for cell in cell_classes:
             for enemy in cell_classes:
                 if enemy.x == cell.x and enemy.y == cell.y:
                     if enemy.id != cell.id:
                         if cell.alive == True and enemy.alive == True:
-                            enemy_cell = enemy
+                            if cell.pregnant == False and enemy.pregnant == False:
+                                if cell.gestating == False and enemy.gestating == False:
+                                    if cell.mature == True and enemy.mature == True:
+                                        enemy_cell = enemy
             try:
                 if cell.food > enemy_cell.food:
                     cell_death(enemy_cell)
                     BOOK_OF_LIFE.append('%s was killed by the larger %s.' % (enemy_cell.id,cell.id))
+                    if enemy_cell.pregant == True:
+                        for gestator in cell_classes:
+                            if gestator.alive == True and gestator.parent == enemy_cell.id:
+                                cell_death(gestator)
+                                BOOK_OF_LIFE.append('%s was killed in %s\'s womb.' % (gestator.id,enemy_cell.id))
                 if cell.food == enemy_cell.food:
                     coin = coin_toss()
                     if coin == 1:
                         cell_death(enemy_cell)
                         BOOK_OF_LIFE.append('%s was killed by %s' % (enemy_cell.id,cell.id))
+                        if enemy_cell.pregant == True:
+                            for gestator in cell_classes:
+                                if gestator.alive == True and gestator.parent == enemy_cell.id:
+                                    cell_death(gestator)
+                                    BOOK_OF_LIFE.append('%s was killed in %s\'s womb.' % (gestator.id,enemy_cell.id))
                     else:
                         cell_death(cell)
                         BOOK_OF_LIFE.append('%s was killed by %s.' % (cell.id,enemy_cell.id))
+                        if cell.pregant == True:
+                            for gestator in cell_classes:
+                                if gestator.alive == True and gestator.parent == cell.id:
+                                    cell_death(gestator)
+                                    BOOK_OF_LIFE.append('%s was killed in %s\'s womb.' % (gestator.id,cell.id))
                 del enemy_cell
             except:
                 pass                        
@@ -404,14 +490,12 @@ def generation(first,food,num):
         """Cells attempt to mate."""
         for cell in cell_classes:
             babies = []
-            if cell.alive == True:
-                if cell.mature == True:
-                    for other in cell_classes:
-                        if other.alive == True:
-                            if other.mature == True:
-                                baby = mate_attempt(cell,other)
-                                if baby is not None:
-                                    cell_classes.append(baby)
+            if cell.alive == True and cell.mature == True:
+                for other in cell_classes:
+                    if other.alive == True and other.mature == True:
+                        baby = mate_attempt(cell,other)
+                        if baby is not None:
+                            cell_classes.append(baby)
         """Age the cells."""
         for cell in cell_classes:
             if cell.alive == True:
@@ -419,17 +503,44 @@ def generation(first,food,num):
                 RECORD[cell.id] = cell.life_span
                 if cell.life_span == 2:
                     cell.mature = True
+                if cell.pregnant == True:
+                    cell.pregnant = False
+                    for gestator in cell_classes:
+                        if gestator.alive == True:
+                            if gestator.gestating == True and gestator.parent == cell.id:
+                                cell.food = int(cell.food / 2)
+                                gestator.food = int(gestator.food / 2)
+                                baby_x = (cell.x + plus_minus_same())
+                                baby_y = (cell.y + plus_minus_same())
+                                gestator.move_location(baby_x,baby_y)
+                                gestator.gestating == False
         """Spawn food for generation."""
         del FOOD_WORLD[:]
         for item in range(1,(food+1)):
             FOOD_WORLD.append([random_location(),random_location()])
+        """Kyrptonite environment toxin danger. 10% encounter. 30% chance of dying without resistance,
+        15% with."""
+        for cell in cell_classes:
+            if cell.alive == True:
+                kryptonite_enc_chance = d100()
+                survive_chance = d100()
+                if  kryptonite_enc_chance <= 1:
+                    resistance_check = kryptonite_env_translator(cell)
+                    if resistance_check == True:
+                        if survive_chance <= 4:
+                            cell_death(cell)
+                            BOOK_OF_LIFE.append('%s has died from toxic kyrptonite in the environment, despite its resistance.' % cell.id)
+                    else:
+                        if survive_chance <= 8:
+                            cell_death(cell)
+                            BOOK_OF_LIFE.append('%s died from toxic krptonite in the environment, having no resistance.' % cell.id)
+        times += 1
     """Ensures that WORLD and CENSUS only hold the living."""
-    del WORLD [:]
     del CENSUS[:]
     for cell in cell_classes:
         if cell.alive == True:
-            WORLD.append([cell.x,cell.y])
             CENSUS.append([cell.id, [cell.x,cell.y]])
+    world_reset()
     """Survivor check."""
     if times > num:
         survivor_list = []
@@ -446,7 +557,14 @@ def generation(first,food,num):
         for cell in cell_classes:
             if cell.alive == True:
                 print('Name: %s Lifespan: %s Food: %s DNA: %s' % (cell.id,cell.life_span,cell.food,cell.dna))
+                if sperm_translator(cell) == True:
+                    print('Evolution: Sperm')
+                if egg_translator(cell) == True:
+                    print('Evolution: Egg')
+                if kryptonite_env_translator(cell) == True:
+                    print('Evolution: Resistant to Kryptonite')
         print(WORLD)
+        print(times)
         
 """Copyright Patrick Morgan 2015, you may use, edit, and
 distribute non-commercially. Made on the Raspberry Pi.
