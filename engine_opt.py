@@ -151,6 +151,11 @@ def food_set(food):
     food = range(1,(food*100)+1)
     for i in food:
         yield [random_location(),random_location()]
+
+def mate_yield(mates):
+    mates = range(1,(mates+1))
+    for i in mates:
+        yield id_generator()
     
         
 """End of functions that do work."""
@@ -199,6 +204,18 @@ def egg_translator(cell):
         return False
     del dna[:]
 
+def asexual_translator(cell):
+    """If a cell is asexual, it will reproduce when it has enough food.
+    without the need for a mate.
+    """
+    dna = cell.dna.split(',')
+    if dna[1] == 'C' or dna[1] == 'D':
+        if dna[2] == 'A':
+            return True
+        else:
+            return False
+    del dna[:]
+
 def kryptonite_env_translator(cell):
     """This protein transaltor will test the cell's membrane and see if they are resistant
     to kryptonite, an imagined toxic substance in the environment's whos copyrights are
@@ -211,8 +228,7 @@ def kryptonite_env_translator(cell):
             return True
     else:
         return False
-    del dna[:]
-            
+
     
 """Classes that define entities."""
 class Cell():
@@ -366,11 +382,8 @@ def mate_attempt(cell,mate):
     if valid_mates > 0:
         offspring_id = []
         """Loops through creating ID's for baby cells, costing food."""
-        while True:
-            for i in range(1,(valid_mates + 1)):
-                offspring_id.append(id_generator())
-                cell.food += -(cell.food / 6)
-            break
+        offspring_id.extend(mate_yield(valid_mates))
+        cell.food += -(cell.food / 6)
         for baby in offspring_id:
             original_id = baby
             baby = Cell()
@@ -386,11 +399,10 @@ def mate_attempt(cell,mate):
                 a sperm or not.
                 """
                 food_start += (mate.food / 6)
-                mate.food_adj = -(mate.food / 6)
+                mate.food = (mate.food - (mate.food / 6))
                 BOOK_OF_LIFE.append('%s is a sperm and has contributed to its offspring %s.' \
                                     % (mate.id,baby.id))
-            baby.food_zero()
-            baby.food_adj(int(food_start))
+            baby.food = food_start
             if egg_translator(cell) is True:
                 """Runs egg protein translator to test DNA of cell and see if cell is
                 an egg or not.
@@ -409,8 +421,7 @@ def mate_attempt(cell,mate):
             if sperm_translator(cell) == True or sperm_translator(mate) == True:
                 if egg_translator(cell) == True or egg_translator(mate) == True:
                     BOOK_OF_LIFE.append('%s was born to both a sperm and an egg.' % baby.id)
-            return baby
-
+            yield baby
     if cell.food < 0:
         cell_death(cell)
         BOOK_OF_LIFE.append('%s died due to child birth.' % cell.id)
@@ -418,6 +429,22 @@ def mate_attempt(cell,mate):
         cell_death(mate)
         BOOK_OF_LIFE.append('%s died from donating food to its offspring.' % mate.id)
 
+def asexual_reproduction(cell):
+    """If a cell is asexual, it reproduces by itself instead of with a mate."""
+    if cell.food >= 12:
+        new_food = (cell.food / 2)
+        baby = Cell()
+        baby.dna_inheritor(cell,mate)
+        baby.parent = cell.id
+        baby_x = (cell.x + plus_minus_same())
+        baby_y = (cell.y + plus_minus_same())
+        baby.world_set(baby_x,baby_y)
+        baby.food = new_food
+        cell.food = new_food
+        world_reset()
+        BOOK_OF_LIFE.append('%s was born asexually to %s.' % (baby.id,cell.id))
+        yield baby
+    
 """User command functions."""
 def generation(first,food,num):
     """Primary call function of LifeSim engine."""
@@ -496,11 +523,19 @@ def generation(first,food,num):
         for cell in cell_classes:
             babies = []
             if cell.alive == True and cell.mature == True:
-                for other in cell_classes:
-                    if other.alive == True and other.mature == True:
-                        baby = mate_attempt(cell,other)
-                        if baby is not None:
-                            cell_classes.append(baby)
+                if asexual_translator(cell) == True:
+                    babies.extend(asexual_reproduction(cell))
+                    if babies:
+                        cell_classes.extend(babies)
+                        del babies[:]
+                else:
+                    for other in cell_classes:
+                        if other.alive == True and other.mature == True:
+                            if asexual_translator(other) == False:
+                                babies.extend(mate_attempt(cell,other))
+                                if babies:
+                                    cell_classes.extend(babies)
+                                    del babies[:]
         """Age the cells."""
         for cell in cell_classes:
             if cell.alive == True:
@@ -528,7 +563,7 @@ def generation(first,food,num):
             if cell.alive == True:
                 kryptonite_enc_chance = d100()
                 survive_chance = d100()
-                if  kryptonite_enc_chance <= 1:
+                if  kryptonite_enc_chance <= 2:
                     resistance_check = kryptonite_env_translator(cell)
                     if resistance_check == True:
                         if survive_chance <= 4:
@@ -565,10 +600,11 @@ def generation(first,food,num):
                     print('Evolution: Sperm')
                 if egg_translator(cell) == True:
                     print('Evolution: Egg')
+                if asexual_translator(cell) == True:
+                    print('Evolution: Asexual')
                 if kryptonite_env_translator(cell) == True:
                     print('Evolution: Resistant to Kryptonite')
         print(WORLD)
-        print(times)
         
 """Copyright Patrick Morgan 2015, you may use, edit, and
 distribute non-commercially. Made on the Raspberry Pi.
