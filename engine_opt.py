@@ -87,11 +87,15 @@ def random_starting_food():
     else:
         return 3
 
+def census_yield():
+    """Yields census for world_reset()"""
+    for cell in CENSUS:
+        yield [cell[1][0], cell[1][1]]
+
 def world_reset():
     """Will reset WORLD with only living cells from CENSUS."""
     del WORLD[:]
-    for cell in CENSUS:
-        WORLD.append([cell[1][0], cell[1][1]])
+    WORLD.extend(census_yield())
 
 def read_book():
     """Reads BOOK_OF_LIFE in a user friendly manner."""
